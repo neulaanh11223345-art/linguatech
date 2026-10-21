@@ -352,7 +352,8 @@
     state.segments.forEach(s => { if (!pool.has(s.original)) pool.set(s.original, []); pool.get(s.original).push(s); });
     const next = units.map(u => {
       const prev = (pool.get(u.text) || []).shift();
-      if (prev && shown(prev) != null) return Object.assign(prev, { para: u.para, lineStart: u.lineStart });
+      // Dùng lại bản dịch cũ nếu câu đã sửa tay, hoặc bảng thuật ngữ chưa đổi kể từ lúc dịch.
+      if (prev && (prev.edited != null || (prev.machine != null && prev.gv === glossaryVersion))) return Object.assign(prev, { para: u.para, lineStart: u.lineStart });
       return { id: newId(), dir: state.dir, original: u.text, para: u.para, lineStart: u.lineStart, hits: [], prepared: '', machine: null, edited: null, status: 'pending', error: '', warnings: [] };
     });
     const keep = new Set(next);
@@ -371,7 +372,7 @@
     for (const s of segs) {
       s.hits = findTerms(s.original, list);
       s.prepared = settings.injectTerms && s.hits.length ? injectTerms(s.original, s.hits, s.dir) : s.original;
-      s.status = 'loading'; s.error = ''; s.warnings = [];
+      s.status = 'loading'; s.error = ''; s.warnings = []; s.gv = glossaryVersion; s.retried = false;
     }
     state.busy = true;
     state.progress = { done: 0, total: segs.length };
@@ -413,8 +414,18 @@
 
   // LanguageApp không nhận bảng thuật ngữ: dịch riêng từng thuật ngữ còn thiếu để biết máy dịch
   // gọi nó là gì (vd. "tủ điện" → 电气柜), rồi thay cách gọi đó bằng thuật ngữ chuẩn (配电柜).
+  const hasTerm = (text, term) => compact(text).toLowerCase().includes(compact(term).toLowerCase());
+  // Viết thường chữ đầu của thuật ngữ tiếng Việt khi nó nằm giữa câu (Tủ điện → tủ điện).
+  const midVi = (term, offset, text) => (offset > 0 && !/[.!?:]\s*$/.test(text.slice(0, offset)) && /^\p{Lu}\p{Ll}/u.test(term) && !/\s\p{Lu}/u.test(term))
+    ? term.charAt(0).toLowerCase() + term.slice(1) : term;
+
   async function enforceTerms(segs) {
-    const has = (text, term) => compact(text).toLowerCase().includes(compact(term).toLowerCase());
+    await replaceByTermTranslation(segs);
+    await retryWithPlaceholders(segs);
+  }
+
+  async function replaceByTermTranslation(segs) {
+    const has = hasTerm;
     const missing = new Map();
     for (const s of segs) {
       if (s.status !== 'done' || s.machine == null) continue;
@@ -436,13 +447,47 @@
         const mt = mtOf.get(h.src.toLowerCase());
         if (!mt || has(mt, h.tgt)) continue;
         const re = new RegExp(mt.split(/\s+/).map(escRe).join('\\s*'), 'giu');
-        text = text.replace(re, (m, offset) => {
-          // Giữa câu tiếng Việt: viết thường chữ đầu của thuật ngữ (Tủ điện → tủ điện).
-          if (toVi && offset > 0 && /^\p{Lu}\p{Ll}/u.test(h.tgt) && !/\s\p{Lu}/u.test(h.tgt)) return h.tgt.charAt(0).toLowerCase() + h.tgt.slice(1);
-          return h.tgt;
-        });
+        text = text.replace(re, (m, offset, whole) => (toVi ? midVi(h.tgt, offset, whole) : h.tgt));
       }
       if (text !== s.machine) { s.machine = tidy(text, s); refreshWarnings(s); }
+    }
+  }
+
+  // Câu vẫn thiếu thuật ngữ: dịch lại riêng câu đó, thay thuật ngữ bằng mã giữ chỗ (ZX01…) mà máy dịch
+  // luôn giữ nguyên, rồi đổi mã thành thuật ngữ chuẩn. Chỉ nhận kết quả khi mọi mã còn nguyên.
+  async function retryWithPlaceholders(segs) {
+    const jobs = [];
+    for (const s of segs) {
+      if (s.status !== 'done' || s.machine == null) continue;
+      if (s.hits.every(h => hasTerm(s.machine, h.tgt))) continue;
+      // Thay mã cho mọi thuật ngữ trong câu: bản dịch lại thay thế toàn bộ bản cũ.
+      let text = '', pos = 0, n = 0;
+      const map = [];
+      for (const h of s.hits) {
+        let tok;
+        do { tok = 'ZX' + pad2(++n); } while (s.original.includes(tok));
+        text += s.original.slice(pos, h.start) + tok;
+        pos = h.end;
+        map.push([tok, h.tgt]);
+      }
+      jobs.push({ s, text: text + s.original.slice(pos), map });
+    }
+    if (!jobs.length) return;
+    const toVi = other(state.dir) === 'vi';
+    for (const batch of chunk(jobs.map(j => Object.assign(j, { prepared: j.text })))) {
+      let res;
+      try {
+        res = await api({ action: 'translate', source: LANG[state.dir].api, target: LANG[other(state.dir)].api, texts: batch.map(j => j.text) });
+      } catch { return; }
+      batch.forEach((j, i) => {
+        let t = ((res.results || [])[i] || {}).text;
+        if (typeof t !== 'string' || !j.map.every(([tok]) => t.includes(tok))) return;
+        for (const [tok, term] of j.map) t = t.replace(new RegExp(tok, 'g'), (m, offset, whole) => (toVi ? midVi(term, offset, whole) : term));
+        if (!toVi) t = t.replace(/(\p{Script=Han})\s+(?=\p{Script=Han})/gu, '$1').replace(/\s+(?=[，。！？；：、])/gu, '');
+        j.s.machine = tidy(t, j.s);
+        j.s.retried = true;
+        refreshWarnings(j.s);
+      });
     }
   }
 
@@ -501,6 +546,7 @@
     if (st === 'pending') return '<span class="chip chip-muted">Chưa dịch</span>';
     let h = '';
     if (seg.edited != null) h += '<span class="chip chip-edit">Đã sửa</span>';
+    else if (seg.retried) h += '<span class="chip chip-muted" title="Máy dịch bỏ qua thuật ngữ nên câu được dịch lại để giữ đúng thuật ngữ. Nên đọc lại nghĩa cả câu.">Dịch lại theo thuật ngữ</span>';
     if (seg.warnings.length) h += `<span class="chip chip-warn">${seg.warnings.length} cảnh báo</span>`;
     return h;
   }
@@ -734,7 +780,7 @@
       state.connMsg = `${terms.length} thuật ngữ từ Google Sheets${g.sheetName ? ` (tab “${g.sheetName}”)` : ''}. Máy dịch: Google LanguageApp.`;
       state.glossaryLoading = false;
       setGlossary(g);
-      if (refresh) toast(`Đã tải ${terms.length} thuật ngữ từ Google Sheets.`);
+      if (refresh) toast(`Đã tải ${terms.length} thuật ngữ từ Google Sheets.${state.segments.length ? ' Bấm “Dịch” để áp dụng cho văn bản đang mở.' : ''}`, 4000);
     } catch (err) {
       state.conn = 'error'; state.connMsg = err.message; state.glossaryLoading = false;
       const cached = store.get(KEY.glossary, null);
