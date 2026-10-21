@@ -243,8 +243,11 @@
     swap: $('#swapBtn'), detect: $('#detectHint'), translate: $('#translateBtn'), sample: $('#sampleBtn'), clear: $('#clearBtn'),
     modeStack: $('#modeStack'), modeColumns: $('#modeColumns'), modeInline: $('#modeInline'), modeHelp: $('#modeHelp'), summary: $('#summary'), banner: $('#banner'), output: $('#output'),
     copyTarget: $('#copyTargetBtn'), copyBi: $('#copyBiBtn'), download: $('#downloadBtn'),
-    termBody: $('#termBody'), termSearch: $('#termSearch'), groupFilter: $('#groupFilter'), termInfo: $('#termInfo'), glossSub: $('#glossSub'),
+    termBody: $('#termBody'), termSearch: $('#termSearch'), groupFilter: $('#groupFilter'), termInfo: $('#termInfo'),
     reload: $('#reloadBtn'), openSheet: $('#openSheetBtn'), more: $('#moreTermsBtn'), navTermCount: $('#navTermCount'), heroTerms: $('#heroTerms'),
+    glossaryDialog: $('#glossaryDialog'), tileTermCount: $('#tileTermCount'), tileGroups: $('#tileGroups'), groupList: $('#groupList'),
+    addTermBox: $('#addTermBox'), addTermForm: $('#addTermForm'), addTermBtn: $('#addTermBtn'), addStatus: $('#addStatus'), addKeyRow: $('#addKeyRow'),
+    newVi: $('#newVi'), newZh: $('#newZh'), newGroup: $('#newGroup'), newNote: $('#newNote'), newKey: $('#newKey'),
     settingsDialog: $('#settingsDialog'), urlInput: $('#urlInput'), keyInput: $('#keyInput'), injectInput: $('#injectInput'), draftInput: $('#draftInput'),
     testBtn: $('#testBtn'), testResult: $('#testResult'), saveSettings: $('#saveSettingsBtn'),
     confirmDialog: $('#confirmDialog'), confirmText: $('#confirmText'), confirmYes: $('#confirmYes'), toast: $('#toast')
@@ -570,25 +573,31 @@
   // Chế độ "Gốc + dịch ↓": toàn bộ nguyên văn ở trên, bản dịch liền mạch ở dưới (giữ xuống dòng, đoạn).
   function stackHTML(segs) {
     const s = state.dir, t = other(s);
-    const targetPart = seg => {
-      const st = statusOf(seg);
-      if (st === 'done') return `<span class="tgt-seg">${tgtMarkup(seg, shown(seg))}</span>`;
-      if (st === 'loading') return '<span class="seg-wait">…</span>';
-      if (st === 'error') return `<span class="seg-err" title="${esc(seg.error)}">[Dịch lỗi]</span>`;
-      return '<span class="seg-miss">[Chưa dịch]</span>';
-    };
     const allLoading = segs.every(x => statusOf(x) === 'loading');
-    const warns = segs.flatMap((seg, i) => seg.warnings.map(w => `<li>${icon('alert')}<span>Câu ${i + 1}: ${esc(w)}</span></li>`));
-    const retried = segs.some(x => x.retried && x.edited == null);
-    return `<article class="pair whole${warns.length ? ' has-warn' : ''} st-${allLoading ? 'loading' : 'done'}">
+    const warns = wholeWarnings(segs);
+    return `<article class="pair whole${warns ? ' has-warn' : ''} st-${allLoading ? 'loading' : 'done'}">
         <div class="pair-src"><div class="pair-label">${LANG[s].upper} · NGUYÊN VĂN</div><p class="src-text" lang="${LANG[s].html}">${joinSegs(segs, srcMarkup, s)}</p></div>
         <div class="pair-tgt"><div class="pair-label">${LANG[t].upper} · BẢN DỊCH</div>${allLoading
-          ? '<div class="skeleton" role="status" aria-label="Đang dịch"><span></span><span></span></div>'
-          : `<p class="tgt-text" lang="${LANG[t].html}">${joinSegs(segs, targetPart, t)}</p>`}
-          ${warns.length ? `<ul class="warns">${warns.join('')}</ul>` : ''}
-          ${retried ? '<p class="whole-note">Có câu được dịch lại để giữ đúng thuật ngữ — nên đọc lại nghĩa.</p>' : ''}
-          <p class="whole-note">Muốn sửa từng câu: chọn <b>Hai cột</b> hoặc <b>Nối tiếp</b>.</p></div>
+          ? SKELETON
+          : `<p class="tgt-text" lang="${LANG[t].html}">${joinSegs(segs, targetPart, t)}</p>`}${warns}</div>
       </article>`;
+  }
+  const SKELETON = '<div class="skeleton" role="status" aria-label="Đang dịch"><span></span><span></span></div>';
+  // Một câu của bản dịch liền mạch (kèm trạng thái nếu chưa dịch xong).
+  function targetPart(seg) {
+    const st = statusOf(seg);
+    if (st === 'done') return `<span class="tgt-seg">${tgtMarkup(seg, shown(seg))}</span>`;
+    if (st === 'loading') return '<span class="seg-wait">…</span>';
+    if (st === 'error') return `<span class="seg-err" title="${esc(seg.error)}">[Dịch lỗi]</span>`;
+    return '<span class="seg-miss">[Chưa dịch]</span>';
+  }
+  // Cảnh báo gom theo số câu + ghi chú, dùng cho các chế độ liền mạch.
+  function wholeWarnings(segs) {
+    const warns = segs.flatMap((seg, i) => seg.warnings.map(w => `<li>${icon('alert')}<span>Câu ${i + 1}: ${esc(w)}</span></li>`));
+    const retried = segs.some(x => x.retried && x.edited == null);
+    return (warns.length ? `<ul class="warns">${warns.join('')}</ul>` : '')
+      + (retried ? '<p class="whole-note">Có câu được dịch lại để giữ đúng thuật ngữ — nên đọc lại nghĩa.</p>' : '')
+      + '<p class="whole-note">Muốn sửa từng câu: chọn <b>Nối tiếp</b>.</p>';
   }
   // Ghép các câu theo bố cục gốc (dùng cho hiển thị HTML).
   function joinSegs(segs, part, lang) {
@@ -604,22 +613,47 @@
     return out;
   }
 
+  // Chế độ "Hai cột": cột Tiếng Việt và cột 中文 đều liền mạch, kèm phiên âm pinyin của phần tiếng Trung.
   function columnsHTML(segs) {
-    const multi = segs.some(x => x.para > 0);
-    let rows = '', prev = -1;
-    segs.forEach((seg, i) => {
-      if (multi && i > 0 && seg.para !== prev) rows += '<div class="cols-gap" aria-hidden="true"></div>';
-      prev = seg.para;
-      const src = `<p class="src-text" lang="${LANG[seg.dir].html}">${srcMarkup(seg)}</p>`;
-      const tgt = targetHTML(seg, true) + (state.editingId === seg.id ? '' : `<div class="cell-tools">${chipHTML(seg)}${toolsHTML(seg)}</div>`);
-      const viIsSrc = seg.dir === 'vi';
-      rows += `<div class="cols-row st-${statusOf(seg)}${seg.warnings.length ? ' has-warn' : ''}" data-id="${seg.id}" role="row">
-        <div class="cols-no" role="cell">${pad2(i + 1)}</div>
-        <div class="cell ${viIsSrc ? 'is-src' : 'is-tgt'}" role="cell" data-label="Tiếng Việt · ${viIsSrc ? 'nguyên văn' : 'bản dịch'}">${viIsSrc ? src : tgt}</div>
-        <div class="cell ${viIsSrc ? 'is-tgt' : 'is-src'}" role="cell" data-label="中文 · ${viIsSrc ? 'bản dịch' : 'nguyên văn'}">${viIsSrc ? tgt : src}</div>
-      </div>`;
-    });
-    return `<div class="cols" role="table" aria-label="Đối chiếu hai cột"><div class="cols-head" role="row"><div role="columnheader">#</div><div role="columnheader">VI · Tiếng Việt</div><div role="columnheader">中 · 中文</div></div>${rows}</div>`;
+    const allLoading = segs.every(x => statusOf(x) === 'loading');
+    const col = lang => {
+      const isSrc = state.dir === lang;
+      const body = isSrc || !allLoading
+        ? `<p class="${isSrc ? 'src-text' : 'tgt-text'}" lang="${LANG[lang].html}">${joinSegs(segs, isSrc ? srcMarkup : targetPart, lang)}</p>`
+        : SKELETON;
+      return `<section class="col2 ${isSrc ? 'is-src' : 'is-tgt'}"><div class="pair-label">${LANG[lang].badge} · ${LANG[lang].upper} · ${isSrc ? 'NGUYÊN VĂN' : 'BẢN DỊCH'}</div>${body}</section>`;
+    };
+    const warns = wholeWarnings(segs);
+    return `<div class="cols2${warns.includes('<ul') ? ' has-warn' : ''}">${col('vi')}${col('zh')}</div>
+      <section class="pinyin-box"><div class="pair-label">PINYIN · 拼音 <span class="muted">(phiên âm phần tiếng Trung)</span></div>${pinyinHTML(segs)}</section>
+      <div class="cols2-notes">${warns}</div>`;
+  }
+
+  /* ---------- Pinyin (thư viện pinyin-pro, tải khi cần) ---------- */
+  let pinyinState = 'idle';
+  function ensurePinyin() {
+    if (pinyinState !== 'idle') return;
+    pinyinState = 'loading';
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js';
+    sc.onload = () => { pinyinState = window.pinyinPro ? 'ready' : 'failed'; renderOutput(); };
+    sc.onerror = () => { pinyinState = 'failed'; renderOutput(); };
+    document.head.append(sc);
+  }
+  const zhPlainText = () => joinByLayout(s => (s.dir === 'zh' ? s.original : (shown(s) ?? '')), 'zh');
+  function pinyinOf(text) {
+    return text.split('\n').map(line => (line.trim()
+      ? window.pinyinPro.pinyin(line, { toneType: 'symbol', nonZh: 'consecutive' })
+        .replace(/ {2,}/g, ' ').replace(/@ /g, '@')
+        .replace(/ ([，。！？；：、）」』,.!?;:)])/g, '$1').replace(/([（「『(]) /g, '$1')
+      : '')).join('\n');
+  }
+  function pinyinHTML(segs) {
+    if (state.dir === 'vi' && segs.every(x => statusOf(x) === 'loading')) return SKELETON;
+    if (pinyinState === 'ready') return `<p class="pinyin-text">${esc(pinyinOf(zhPlainText()))}</p>`;
+    if (pinyinState === 'failed') return '<p class="tgt-msg">Không tải được bộ phiên âm (cần kết nối mạng). Thử tải lại trang.</p>';
+    ensurePinyin();
+    return '<p class="whole-note">Đang tải bộ phiên âm…</p>';
   }
 
   // Chế độ "Nối tiếp": giữ nguyên câu gốc, bản dịch viết liền ngay sau.
@@ -717,7 +751,7 @@
       ? `Toàn bộ <b>${s}</b> nguyên văn ở trên, <b>${t}</b> bản dịch liền mạch ở dưới.`
       : state.mode === 'inline'
         ? `Giữ nguyên câu <b>${s}</b>, viết liền <b>${t}</b> ngay sau. Nút <b>Song ngữ</b> và <b>TXT</b> xuất đúng dạng nối tiếp này.`
-        : 'Đối chiếu theo hàng: <b>Tiếng Việt</b> luôn ở cột trái (trên điện thoại: ở trên), <b>中文</b> luôn ở cột phải.';
+        : 'Cột trái <b>Tiếng Việt</b>, cột phải <b>中文</b> (trên điện thoại: xếp trên dưới), phiên âm <b>pinyin</b> bên dưới.';
     [el.translate, el.swap, el.clear, el.sample].forEach(b => { b.disabled = state.busy; });
     el.translate.innerHTML = state.busy ? '<span class="spin"></span><span>Đang dịch…</span>' : `${icon('translate')}<span>Dịch</span><kbd>Ctrl ↵</kbd>`;
     const has = state.segments.length > 0;
@@ -753,18 +787,25 @@
     el.groupFilter.innerHTML = '<option value="">Tất cả nhóm</option>' + groups.map(g => `<option>${esc(g)}</option>`).join('');
     el.groupFilter.value = state.gloss.group;
     el.groupFilter.hidden = !groups.length;
+    el.groupList.innerHTML = groups.map(g => `<option value="${esc(g)}">`).join('');
+    // Ô thư viện: vài nhóm tiêu biểu kèm số lượng.
+    const count = new Map();
+    state.glossary.terms.forEach(t => { if (t.group) count.set(t.group, (count.get(t.group) || 0) + 1); });
+    el.tileGroups.innerHTML = [...count].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([g, n]) => `<span class="tag">${esc(g)} · ${n}</span>`).join('');
   }
 
   function renderGlossary() {
     const g = state.glossary, terms = g.terms;
     el.navTermCount.textContent = terms.length;
     el.heroTerms.textContent = terms.length;
+    el.tileTermCount.textContent = terms.length;
     const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '';
-    el.glossSub.textContent =
-      g.source === 'demo' ? 'Dữ liệu mẫu — kết nối Apps Script để đọc Google Sheets của bạn (chỉ đọc)'
+    const sub =
+      g.source === 'demo' ? 'Dữ liệu mẫu — kết nối Apps Script để dùng Google Sheet của bạn'
       : g.source === 'loading' ? 'Đang tải từ Google Sheets…'
       : g.source === 'cache' ? `Bản lưu tạm từ Google Sheets${when ? ' · ' + when : ''} — chưa làm mới được`
-      : `Google Sheets${g.sheetName ? ` · tab “${g.sheetName}”` : ''}${when ? ' · cập nhật ' + when : ''} · chỉ đọc`;
+      : `Google Sheets${g.sheetName ? ` · tab “${g.sheetName}”` : ''}${when ? ' · cập nhật ' + when : ''}`;
+    $$('[data-gloss-sub]').forEach(e => { e.textContent = sub; });
     el.reload.hidden = !settings.url;
     el.reload.disabled = state.glossaryLoading;
     el.openSheet.hidden = !g.sheetUrl;
@@ -843,6 +884,12 @@
     const s = state.dir, t = other(s);
     // "Gốc + dịch ↓": cả đoạn nguyên văn, rồi cả đoạn bản dịch.
     if (state.mode === 'stack') return joinByLayout(x => x.original, s) + '\n\n' + joinByLayout(targetOrMark, t);
+    // "Hai cột": Tiếng Việt, 中文 và pinyin (nếu bộ phiên âm đã tải).
+    if (state.mode === 'columns') {
+      const vi = joinByLayout(x => (x.dir === 'vi' ? x.original : targetOrMark(x)), 'vi');
+      const zh = joinByLayout(x => (x.dir === 'zh' ? x.original : targetOrMark(x)), 'zh');
+      return vi + '\n\n' + zh + (pinyinState === 'ready' ? '\n\n' + pinyinOf(zhPlainText()) : '');
+    }
     let out = '', prev = -1;
     state.segments.forEach((seg, i) => {
       if (i) out += seg.para !== prev ? '\n\n\n' : '\n\n';
@@ -1022,8 +1069,47 @@
   el.more.addEventListener('click', () => { state.gloss.limit += 300; renderGlossary(); });
   el.reload.addEventListener('click', () => loadGlossary(true));
 
+  /* ---------- Thêm thuật ngữ (ghi vào Google Sheet qua Apps Script) ---------- */
+  function addStatus(kind, msg) { el.addStatus.className = 'add-status t-' + kind; el.addStatus.textContent = msg; }
+  function openGlossary() {
+    renderGlossary();
+    el.newKey.value = settings.key || '';
+    el.glossaryDialog.showModal();
+  }
+  el.addTermForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const term = { vi: nfc(el.newVi.value).trim(), zh: nfc(el.newZh.value).trim(), group: el.newGroup.value.trim(), note: el.newNote.value.trim() };
+    if (!term.vi || !term.zh) return addStatus('err', 'Cần nhập cả tiếng Việt và tiếng Trung.');
+    if (!settings.url) return addStatus('err', 'Chưa kết nối Apps Script nên chưa lưu được vào Google Sheet.');
+    const dup = state.glossary.terms.find(t => t.vi.toLowerCase() === term.vi.toLowerCase());
+    let overwrite = false;
+    if (dup) {
+      if (!(await confirmBox(`«${dup.vi}» đã có trong bảng (→ ${dup.zh}). Ghi đè bằng «${term.zh}»?`, 'Ghi đè'))) return;
+      overwrite = true;
+    }
+    const key = el.newKey.value.trim() || settings.key;
+    addStatus('load', 'Đang lưu vào Google Sheet…');
+    el.addTermBtn.disabled = true;
+    try {
+      const d = await api({ action: 'addTerm', term, overwrite }, { url: settings.url, key });
+      if (key && key !== settings.key) { settings.key = key; store.set(KEY.settings, settings); }
+      addStatus('ok', `${d.updated ? 'Đã cập nhật' : 'Đã thêm'} «${term.vi}» → «${term.zh}» vào dòng ${d.row} của Google Sheet.`);
+      el.addTermForm.reset();
+      el.newKey.value = settings.key || '';
+      await loadGlossary(true);
+      el.newVi.focus();
+    } catch (err) {
+      const msg = /Không rõ thao tác/.test(err.message)
+        ? 'Apps Script đang là bản cũ: hãy dán Code.gs mới rồi Triển khai → Phiên bản mới.'
+        : err.message;
+      if (/mã quản lý/i.test(msg)) el.addKeyRow.hidden = false;
+      addStatus('err', msg);
+    } finally { el.addTermBtn.disabled = false; }
+  });
+
   document.addEventListener('click', e => {
     if (e.target.closest('[data-open-settings]')) { openSettings(); return; }
+    if (e.target.closest('[data-open-glossary]')) { openGlossary(); return; }
     const go = e.target.closest('[data-goto]');
     if (go) {
       const target = document.getElementById(go.dataset.goto);
