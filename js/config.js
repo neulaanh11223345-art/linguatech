@@ -3,6 +3,6 @@
 // để mọi người mở trang đều dùng chung kết nối. Để trống = chế độ mẫu.
 // Người dùng vẫn có thể đổi URL riêng trên máy mình trong mục “Kết nối”.
 window.LINGUATECH_CONFIG = {
-  APPS_SCRIPT_URL: '',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyIbsRuUyXaf7tO294FnZfO2RNpw3vjOoU7wltdYl6wCksK3E8QtEHLNPzSq1mv3lfx/exec',
   ACCESS_KEY: '' // tùy chọn, phải trùng CONFIG.ACCESS_KEY trong Code.gs
 };
