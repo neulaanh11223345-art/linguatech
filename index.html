@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f2e39">
+  <meta name="description" content="Dịch song ngữ Việt ⇄ Trung cho bảo trì, điện công nghiệp và kỹ thuật máy. Thuật ngữ lấy từ Google Sheets, dịch bằng Google Apps Script — miễn phí.">
+  <title>LinguaTech · Dịch kỹ thuật Việt ⇄ Trung</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b947b'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='white' font-family='sans-serif'%3E%E6%96%87%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-translate" viewBox="0 0 24 24"><path d="M5 8h14M12 4v4M7 8c.2 5.5 4.3 9.5 10 11.5M17 8c-.4 3.6-2.3 6.6-5.4 8.9M3.5 20l4-10 4 10M5 16.5h5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5C7 4 10.5 4.5 12 6c1.5-1.5 5-2 8-.5v13c-3-1.5-6.5-1-8 1-1.5-2-5-2.5-8-1zM12 6v13.5"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 7V3M15 7V3M6.5 7h11v4a5.5 5.5 0 0 1-11 0zM12 16.5V21"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M4 17v3h16v-3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.7-4.4L3.5 9M3.5 4v5h5M4 13a8 8 0 0 0 14.7 4.4l1.8-2.4M20.5 20v-5h-5"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19zM12 10v4.5M12 17.2v.3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.3"/></symbol>
+  <symbol id="i-stack" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="16" height="6.5" rx="1.5"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3.5" y="4" width="7.5" height="16" rx="1.5"/><rect x="13" y="4" width="7.5" height="16" rx="1.5"/></symbol>
+  <symbol id="i-inline" viewBox="0 0 24 24"><path d="M4 7h7M4 12h16M4 17h10"/><path d="M14 7h6" stroke-dasharray="2 2"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5 4 6v6c0 4.8 3.1 7.8 8 9.5 4.9-1.7 8-4.7 8-9.5V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar" aria-label="Điều hướng chính">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">文</div>
+      <div>
+        <div class="brand-name">LinguaTech</div>
+        <div class="brand-sub">VIỆT ⇄ TRUNG · 越中</div>
+      </div>
+    </div>
+    <div class="nav-cap">Không gian làm việc</div>
+    <nav class="nav">
+      <button class="nav-btn is-active" data-goto="translate-area"><svg class="i"><use href="#i-translate"/></svg>Dịch song ngữ</button>
+      <button class="nav-btn" data-goto="glossary-area"><svg class="i"><use href="#i-book"/></svg>Thuật ngữ<span class="nav-badge" id="navTermCount">0</span></button>
+      <button class="nav-btn" data-open-settings><svg class="i"><use href="#i-plug"/></svg>Kết nối</button>
+    </nav>
+    <div class="side-bottom">
+      <div class="conn-card">
+        <div class="conn-head"><span class="dot" data-conn-dot></span><span data-conn-title>Chế độ mẫu</span></div>
+        <p data-conn-text></p>
+        <button class="conn-btn" data-open-settings>Cài đặt kết nối</button>
+      </div>
+      <div class="side-foot">v3 · Miễn phí · GitHub Pages + Apps Script</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="mobile-brand"><span class="brand-logo sm" aria-hidden="true">文</span><b>LinguaTech</b></div>
+      <div class="crumb">Ứng dụng <span>/</span> <strong>Dịch song ngữ</strong></div>
+      <div class="top-right">
+        <span class="pill"><span class="dot" data-conn-dot></span><span data-conn-title>Chế độ mẫu</span></span>
+        <button class="icon-btn" data-open-settings aria-label="Cài đặt kết nối" title="Cài đặt kết nối"><svg class="i"><use href="#i-plug"/></svg></button>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Trạm dịch kỹ thuật · Việt ⇄ Trung</div>
+          <h1>Dịch đúng thuật ngữ, đối chiếu từng câu.</h1>
+          <p>Bảo trì · điện công nghiệp · kỹ thuật máy · trao đổi với nhà cung cấp Trung Quốc.</p>
+        </div>
+        <div class="hero-chips">
+          <span class="hchip"><svg class="i"><use href="#i-book"/></svg><b id="heroTerms">0</b> thuật ngữ</span>
+          <span class="hchip"><svg class="i"><use href="#i-sheet"/></svg>Google Sheets · chỉ đọc</span>
+          <span class="hchip"><svg class="i"><use href="#i-check"/></svg>Miễn phí</span>
+        </div>
+      </section>
+
+      <div class="workspace" id="translate-area">
+        <section class="card input-card" aria-labelledby="inTitle">
+          <div class="card-head">
+            <div class="title-row"><span class="step">01</span><h2 id="inTitle">Văn bản cần dịch</h2></div>
+            <p class="hint">Dán yêu cầu bảo trì, mô tả thiết bị hoặc tin nhắn cho nhà cung cấp.</p>
+          </div>
+          <div class="langbar">
+            <div class="lang-pill" id="srcPill"></div>
+            <button class="swap-btn" id="swapBtn" aria-label="Đảo chiều dịch" title="Đảo chiều dịch"><svg class="i"><use href="#i-swap"/></svg></button>
+            <div class="lang-pill" id="tgtPill"></div>
+          </div>
+          <label class="field-label" for="sourceInput"><span>Nội dung gốc</span><span id="srcLangLabel"></span></label>
+          <div class="ta-wrap">
+            <textarea id="sourceInput" maxlength="20000" spellcheck="false" placeholder="Nhập hoặc dán nội dung cần dịch…"></textarea>
+            <span class="counter"><span id="charCount">0</span> / 20.000</span>
+          </div>
+          <div class="detect" id="detectHint" hidden></div>
+          <div class="input-actions">
+            <div class="left">
+              <button class="btn btn-ghost" id="sampleBtn"><svg class="i"><use href="#i-sparkle"/></svg>Nạp ví dụ</button>
+              <button class="btn btn-ghost" id="clearBtn"><svg class="i"><use href="#i-trash"/></svg>Xóa</button>
+            </div>
+            <button class="btn btn-primary" id="translateBtn"></button>
+          </div>
+          <div class="input-foot"><svg class="i"><use href="#i-shield"/></svg><span>Chỉ dùng cho nội dung <b>không mật</b>. Mã máy, model, số đo được kiểm tra lại sau khi dịch.</span></div>
+        </section>
+
+        <section class="card result-card" id="result-area" aria-labelledby="outTitle">
+          <div class="result-head">
+            <div class="title-row"><span class="step">02</span><h2 id="outTitle">Kết quả dịch</h2></div>
+            <div class="segmented" role="group" aria-label="Kiểu hiển thị">
+              <button id="modeStack" aria-pressed="true"><svg class="i"><use href="#i-stack"/></svg>Gốc + dịch ↓</button>
+              <button id="modeColumns" aria-pressed="false"><svg class="i"><use href="#i-columns"/></svg>Hai cột</button>
+              <button id="modeInline" aria-pressed="false"><svg class="i"><use href="#i-inline"/></svg>Nối tiếp</button>
+            </div>
+          </div>
+          <p class="mode-help" id="modeHelp"></p>
+          <div class="meta-bar">
+            <div class="summary" id="summary" aria-live="polite"></div>
+            <div class="out-actions">
+              <button class="btn btn-soft btn-sm" id="copyTargetBtn" title="Sao chép bản dịch liền mạch"><svg class="i"><use href="#i-copy"/></svg>Bản dịch</button>
+              <button class="btn btn-soft btn-sm" id="copyBiBtn" title="Sao chép song ngữ từng cặp câu"><svg class="i"><use href="#i-copy"/></svg>Song ngữ</button>
+              <button class="btn btn-soft btn-sm" id="downloadBtn" title="Tải file TXT song ngữ"><svg class="i"><use href="#i-download"/></svg>TXT</button>
+            </div>
+          </div>
+          <div id="banner"></div>
+          <div class="output" id="output"></div>
+          <div class="result-foot">Bấm <svg class="i"><use href="#i-edit"/></svg> trên từng câu để sửa bản dịch. <mark class="hl-term">Thuật ngữ</mark> lấy từ bảng; <mark class="hl-code">mã/số</mark> phải được giữ nguyên.</div>
+        </section>
+      </div>
+
+      <div class="below">
+        <section class="card glossary" id="glossary-area" aria-labelledby="glTitle">
+          <div class="gl-head">
+            <div class="gl-title">
+              <div class="bubble" aria-hidden="true">文</div>
+              <div><h2 id="glTitle">Thư viện thuật ngữ</h2><p id="glossSub"></p></div>
+            </div>
+            <div class="gl-actions">
+              <button class="btn btn-soft btn-sm" id="reloadBtn" hidden><svg class="i"><use href="#i-refresh"/></svg>Tải lại</button>
+              <a class="btn btn-soft btn-sm" id="openSheetBtn" target="_blank" rel="noopener" hidden><svg class="i"><use href="#i-external"/></svg>Mở Google Sheet</a>
+            </div>
+          </div>
+          <div class="gl-tools">
+            <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="termSearch" type="search" placeholder="Tìm thuật ngữ (gõ không dấu cũng được)" aria-label="Tìm thuật ngữ"></label>
+            <select id="groupFilter" class="select" aria-label="Lọc theo nhóm"></select>
+            <span class="term-info" id="termInfo"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Tiếng Việt</th><th>中文</th><th>Nhóm</th><th>Ghi chú</th></tr></thead>
+              <tbody id="termBody"></tbody>
+            </table>
+          </div>
+          <div class="more-wrap"><button class="btn btn-ghost btn-sm" id="moreTermsBtn" hidden></button></div>
+        </section>
+
+        <aside class="card guide" aria-labelledby="guideTitle">
+          <div class="guide-icon"><svg class="i"><use href="#i-plug"/></svg></div>
+          <h3 id="guideTitle">Từ Google Sheets đến bản dịch chuẩn</h3>
+          <ol>
+            <li>Thuật ngữ đọc từ Sheet sẵn có của bạn (chỉ đọc).</li>
+            <li>Thuật ngữ được chèn vào câu trước khi dịch bằng Google LanguageApp.</li>
+            <li>Sau dịch, mỗi câu được kiểm tra lại thuật ngữ và mã máy.</li>
+          </ol>
+          <div class="guide-status"><span class="dot" data-conn-dot></span><span data-conn-title>Chế độ mẫu</span></div>
+          <button class="btn guide-btn" data-open-settings>Cài đặt kết nối <svg class="i"><use href="#i-external"/></svg></button>
+        </aside>
+      </div>
+
+      <footer class="footer">LinguaTech v3 · GitHub Pages + Google Apps Script + Google Sheets · Bản dịch máy cần được người hiểu chuyên môn kiểm tra trước khi áp dụng.</footer>
+    </div>
+  </main>
+</div>
+
+<nav class="mobile-nav" aria-label="Điều hướng di động">
+  <button class="is-active" data-goto="translate-area"><svg class="i"><use href="#i-translate"/></svg>Dịch</button>
+  <button data-goto="glossary-area"><svg class="i"><use href="#i-book"/></svg>Thuật ngữ</button>
+  <button data-open-settings><svg class="i"><use href="#i-plug"/></svg>Kết nối</button>
+</nav>
+
+<dialog id="settingsDialog" aria-labelledby="setTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="setTitle">Kết nối Google Apps Script</h3>
+      <button type="button" class="icon-btn" data-close aria-label="Đóng">✕</button>
+    </div>
+    <p class="muted">Dán URL Web App (kết thúc bằng <code>/exec</code>). Để trống để dùng chế độ mẫu.</p>
+    <label class="f-label" for="urlInput">URL Web App</label>
+    <input class="f-input" id="urlInput" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false">
+    <label class="f-label" for="keyInput">Khóa truy cập <span class="muted">(tùy chọn — trùng ACCESS_KEY trong Code.gs)</span></label>
+    <input class="f-input" id="keyInput" type="text" autocomplete="off" spellcheck="false">
+    <label class="check"><input type="checkbox" id="injectInput"><span><b>Ép thuật ngữ</b> — chèn thuật ngữ đích vào câu trước khi dịch</span></label>
+    <label class="check"><input type="checkbox" id="draftInput"><span><b>Ghi nhớ văn bản đang soạn</b> trên trình duyệt này</span></label>
+    <div class="test-line" id="testResult" hidden></div>
+    <details class="howto">
+      <summary>Cách lấy URL (khoảng 5 phút, miễn phí)</summary>
+      <ol>
+        <li>Mở Google Sheet thuật ngữ → <b>Tiện ích mở rộng → Apps Script</b>.</li>
+        <li>Xóa mã có sẵn, dán toàn bộ file <code>apps-script/Code.gs</code>, bấm Lưu.</li>
+        <li>Chọn hàm <code>kiemTraCaiDat</code> → <b>Chạy</b> → cấp quyền.</li>
+        <li><b>Triển khai → Triển khai mới → Ứng dụng web</b>: Thực thi với tư cách <i>Tôi</i>, Người có quyền truy cập <i>Bất kỳ ai</i>.</li>
+        <li>Sao chép URL kết thúc bằng <code>/exec</code> dán vào ô trên. Chi tiết trong <code>HUONG_DAN.md</code>.</li>
+      </ol>
+    </details>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-soft" id="testBtn">Kiểm tra</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+      <button type="button" class="btn btn-primary" id="saveSettingsBtn">Lưu</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="confirmDialog" aria-labelledby="cfTitle">
+  <div class="modal">
+    <h3 id="cfTitle">Xác nhận</h3>
+    <p id="confirmText"></p>
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-soft" data-confirm="no">Hủy</button>
+      <button type="button" class="btn btn-primary" data-confirm="yes" id="confirmYes">Tiếp tục</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
