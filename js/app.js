@@ -14,7 +14,7 @@
   const settings = {
     url: typeof saved.url === 'string' ? saved.url : (CFG.APPS_SCRIPT_URL || ''),
     key: typeof saved.key === 'string' ? saved.key : (CFG.ACCESS_KEY || ''),
-    injectTerms: saved.injectTerms !== false,
+    injectTerms: saved.injectTerms === true,
     saveDraft: saved.saveDraft !== false
   };
   const ui = Object.assign({ dir: 'vi', mode: 'stack' }, Object(store.get(KEY.ui, {})));
@@ -399,6 +399,7 @@
           batch.forEach(refreshWarnings);
           render();
         }
+        await enforceTerms(segs);
       }
     } finally {
       segs.forEach(refreshWarnings);
@@ -408,6 +409,41 @@
     }
     const errs = segs.filter(s => statusOf(s) === 'error');
     if (errs.length) toast(`${errs.length} câu dịch lỗi: ${errs[0].error}`, 5000);
+  }
+
+  // LanguageApp không nhận bảng thuật ngữ: dịch riêng từng thuật ngữ còn thiếu để biết máy dịch
+  // gọi nó là gì (vd. "tủ điện" → 电气柜), rồi thay cách gọi đó bằng thuật ngữ chuẩn (配电柜).
+  async function enforceTerms(segs) {
+    const has = (text, term) => compact(text).toLowerCase().includes(compact(term).toLowerCase());
+    const missing = new Map();
+    for (const s of segs) {
+      if (s.status !== 'done' || s.machine == null) continue;
+      for (const h of s.hits) if (!has(s.machine, h.tgt)) missing.set(h.src.toLowerCase(), h.src);
+    }
+    if (!missing.size) return;
+    const keys = [...missing.keys()].slice(0, 150);
+    let res;
+    try {
+      res = await api({ action: 'translate', source: LANG[state.dir].api, target: LANG[other(state.dir)].api, texts: keys.map(k => missing.get(k)) });
+    } catch { return; } // không thay được thì giữ nguyên, cảnh báo vẫn hiện
+    const mtOf = new Map(keys.map((k, i) => [k, nfc(((res.results || [])[i] || {}).text || '').replace(/[。．.!?！？]+$/u, '').trim()]));
+    const toVi = other(state.dir) === 'vi';
+    for (const s of segs) {
+      if (s.status !== 'done' || s.machine == null) continue;
+      let text = s.machine;
+      for (const h of s.hits) {
+        if (has(text, h.tgt)) continue;
+        const mt = mtOf.get(h.src.toLowerCase());
+        if (!mt || has(mt, h.tgt)) continue;
+        const re = new RegExp(mt.split(/\s+/).map(escRe).join('\\s*'), 'giu');
+        text = text.replace(re, (m, offset) => {
+          // Giữa câu tiếng Việt: viết thường chữ đầu của thuật ngữ (Tủ điện → tủ điện).
+          if (toVi && offset > 0 && /^\p{Lu}\p{Ll}/u.test(h.tgt) && !/\s\p{Lu}/u.test(h.tgt)) return h.tgt.charAt(0).toLowerCase() + h.tgt.slice(1);
+          return h.tgt;
+        });
+      }
+      if (text !== s.machine) { s.machine = tidy(text, s); refreshWarnings(s); }
+    }
   }
 
   async function retrySeg(seg) {
