@@ -34,6 +34,8 @@
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5 4 6v6c0 4.8 3.1 7.8 8 9.5 4.9-1.7 8-4.7 8-9.5V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
 </svg>
 
 <div class="app">
@@ -48,7 +50,7 @@
     <div class="nav-cap">Không gian làm việc</div>
     <nav class="nav">
       <button class="nav-btn is-active" data-goto="translate-area"><svg class="i"><use href="#i-translate"/></svg>Dịch song ngữ</button>
-      <button class="nav-btn" data-goto="glossary-area"><svg class="i"><use href="#i-book"/></svg>Thuật ngữ<span class="nav-badge" id="navTermCount">0</span></button>
+      <button class="nav-btn" data-open-glossary><svg class="i"><use href="#i-book"/></svg>Thuật ngữ<span class="nav-badge" id="navTermCount">0</span></button>
       <button class="nav-btn" data-open-settings><svg class="i"><use href="#i-plug"/></svg>Kết nối</button>
     </nav>
     <div class="side-bottom">
@@ -137,36 +139,24 @@
       </div>
 
       <div class="below">
-        <section class="card glossary" id="glossary-area" aria-labelledby="glTitle">
-          <div class="gl-head">
-            <div class="gl-title">
-              <div class="bubble" aria-hidden="true">文</div>
-              <div><h2 id="glTitle">Thư viện thuật ngữ</h2><p id="glossSub"></p></div>
-            </div>
-            <div class="gl-actions">
-              <button class="btn btn-soft btn-sm" id="reloadBtn" hidden><svg class="i"><use href="#i-refresh"/></svg>Tải lại</button>
-              <a class="btn btn-soft btn-sm" id="openSheetBtn" target="_blank" rel="noopener" hidden><svg class="i"><use href="#i-external"/></svg>Mở Google Sheet</a>
-            </div>
-          </div>
-          <div class="gl-tools">
-            <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="termSearch" type="search" placeholder="Tìm thuật ngữ (gõ không dấu cũng được)" aria-label="Tìm thuật ngữ"></label>
-            <select id="groupFilter" class="select" aria-label="Lọc theo nhóm"></select>
-            <span class="term-info" id="termInfo"></span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Tiếng Việt</th><th>中文</th><th>Nhóm</th><th>Ghi chú</th></tr></thead>
-              <tbody id="termBody"></tbody>
-            </table>
-          </div>
-          <div class="more-wrap"><button class="btn btn-ghost btn-sm" id="moreTermsBtn" hidden></button></div>
-        </section>
+        <button type="button" class="card gl-tile" id="glossary-area" data-open-glossary aria-haspopup="dialog">
+          <span class="bubble" aria-hidden="true">文</span>
+          <span class="gl-tile-body">
+            <span class="gl-tile-title">Thư viện thuật ngữ</span>
+            <span class="gl-tile-sub" data-gloss-sub></span>
+            <span class="gl-tile-groups" id="tileGroups"></span>
+          </span>
+          <span class="gl-tile-side">
+            <span class="gl-tile-count"><b id="tileTermCount">0</b> thuật ngữ</span>
+            <span class="gl-tile-open">Mở danh sách <svg class="i"><use href="#i-arrow"/></svg></span>
+          </span>
+        </button>
 
         <aside class="card guide" aria-labelledby="guideTitle">
           <div class="guide-icon"><svg class="i"><use href="#i-plug"/></svg></div>
           <h3 id="guideTitle">Từ Google Sheets đến bản dịch chuẩn</h3>
           <ol>
-            <li>Thuật ngữ đọc từ Sheet sẵn có của bạn (chỉ đọc).</li>
+            <li>Thuật ngữ đọc từ Google Sheet của bạn; thêm thuật ngữ mới ngay trên web.</li>
             <li>Dịch nguyên câu bằng Google LanguageApp, rồi tự thay thuật ngữ theo bảng.</li>
             <li>Câu nào vẫn thiếu thuật ngữ hoặc mất mã máy sẽ được đánh dấu cảnh báo.</li>
           </ol>
@@ -182,9 +172,49 @@
 
 <nav class="mobile-nav" aria-label="Điều hướng di động">
   <button class="is-active" data-goto="translate-area"><svg class="i"><use href="#i-translate"/></svg>Dịch</button>
-  <button data-goto="glossary-area"><svg class="i"><use href="#i-book"/></svg>Thuật ngữ</button>
+  <button data-open-glossary><svg class="i"><use href="#i-book"/></svg>Thuật ngữ</button>
   <button data-open-settings><svg class="i"><use href="#i-plug"/></svg>Kết nối</button>
 </nav>
+
+<dialog id="glossaryDialog" class="wide" aria-labelledby="glTitle">
+  <div class="modal gl-modal">
+    <div class="modal-head">
+      <div class="gl-title">
+        <div class="bubble" aria-hidden="true">文</div>
+        <div><h3 id="glTitle">Thư viện thuật ngữ</h3><p data-gloss-sub></p></div>
+      </div>
+      <div class="gl-actions">
+        <button class="btn btn-soft btn-sm" id="reloadBtn" hidden><svg class="i"><use href="#i-refresh"/></svg>Tải lại</button>
+        <a class="btn btn-soft btn-sm" id="openSheetBtn" target="_blank" rel="noopener" hidden><svg class="i"><use href="#i-external"/></svg>Mở Sheet</a>
+        <button type="button" class="icon-btn" data-close aria-label="Đóng">✕</button>
+      </div>
+    </div>
+    <details class="add-term" id="addTermBox">
+      <summary><svg class="i"><use href="#i-plus"/></svg>Thêm thuật ngữ mới <span class="muted">— tự lưu vào Google Sheet</span></summary>
+      <form id="addTermForm" class="add-form" autocomplete="off">
+        <label><span>Tiếng Việt *</span><input class="f-input" id="newVi" required maxlength="200" placeholder="Ví dụ: Lưỡi cắt rìa"></label>
+        <label><span>Tiếng Trung *</span><input class="f-input" id="newZh" required maxlength="200" lang="zh-CN" placeholder="例如：环切刀"></label>
+        <label><span>Nhóm</span><input class="f-input" id="newGroup" maxlength="100" list="groupList" placeholder="Thiết bị điện, Cơ khí…"></label>
+        <label><span>Ghi chú</span><input class="f-input" id="newNote" maxlength="300" placeholder="Tùy chọn"></label>
+        <label class="add-key" id="addKeyRow" hidden><span>Mã quản lý</span><input class="f-input" id="newKey" type="password" autocomplete="off" placeholder="ADD_KEY trong Code.gs"></label>
+        <datalist id="groupList"></datalist>
+        <div class="add-actions"><span class="add-status" id="addStatus" role="status"></span><button class="btn btn-primary btn-sm" type="submit" id="addTermBtn"><svg class="i"><use href="#i-check"/></svg>Lưu vào Google Sheet</button></div>
+      </form>
+    </details>
+    <div class="gl-tools">
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="termSearch" type="search" placeholder="Tìm thuật ngữ (gõ không dấu cũng được)" aria-label="Tìm thuật ngữ"></label>
+      <select id="groupFilter" class="select" aria-label="Lọc theo nhóm"></select>
+      <span class="term-info" id="termInfo"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tiếng Việt</th><th>中文</th><th>Nhóm</th><th>Ghi chú</th></tr></thead>
+        <tbody id="termBody"></tbody>
+      </table>
+    </div>
+    <div class="more-wrap"><button class="btn btn-ghost btn-sm" id="moreTermsBtn" hidden></button></div>
+  </div>
+</dialog>
 
 <dialog id="settingsDialog" aria-labelledby="setTitle">
   <div class="modal">
