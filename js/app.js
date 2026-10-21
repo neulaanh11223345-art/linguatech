@@ -567,19 +567,41 @@
     return `<p class="tgt-text" lang="${LANG[other(seg.dir)].html}">${tgtMarkup(seg, text)}</p>${warns}`;
   }
 
+  // Chế độ "Gốc + dịch ↓": toàn bộ nguyên văn ở trên, bản dịch liền mạch ở dưới (giữ xuống dòng, đoạn).
   function stackHTML(segs) {
-    const s = state.dir, t = other(s), multi = segs.some(x => x.para > 0);
-    let html = '', prev = -1;
-    segs.forEach((seg, i) => {
-      if (multi && seg.para !== prev) html += `<div class="para-sep"><span>Đoạn ${seg.para + 1}</span></div>`;
-      prev = seg.para;
-      html += `<article class="pair st-${statusOf(seg)}${seg.warnings.length ? ' has-warn' : ''}" data-id="${seg.id}">
-        <header class="pair-top"><span class="pair-no">CÂU ${pad2(i + 1)}</span>${chipHTML(seg)}<span class="pair-tools">${toolsHTML(seg)}</span></header>
-        <div class="pair-src"><div class="pair-label">${LANG[s].upper} · NGUYÊN VĂN</div><p class="src-text" lang="${LANG[s].html}">${srcMarkup(seg)}</p></div>
-        <div class="pair-tgt"><div class="pair-label">${LANG[t].upper} · BẢN DỊCH</div>${targetHTML(seg)}</div>
+    const s = state.dir, t = other(s);
+    const targetPart = seg => {
+      const st = statusOf(seg);
+      if (st === 'done') return `<span class="tgt-seg">${tgtMarkup(seg, shown(seg))}</span>`;
+      if (st === 'loading') return '<span class="seg-wait">…</span>';
+      if (st === 'error') return `<span class="seg-err" title="${esc(seg.error)}">[Dịch lỗi]</span>`;
+      return '<span class="seg-miss">[Chưa dịch]</span>';
+    };
+    const allLoading = segs.every(x => statusOf(x) === 'loading');
+    const warns = segs.flatMap((seg, i) => seg.warnings.map(w => `<li>${icon('alert')}<span>Câu ${i + 1}: ${esc(w)}</span></li>`));
+    const retried = segs.some(x => x.retried && x.edited == null);
+    return `<article class="pair whole${warns.length ? ' has-warn' : ''} st-${allLoading ? 'loading' : 'done'}">
+        <div class="pair-src"><div class="pair-label">${LANG[s].upper} · NGUYÊN VĂN</div><p class="src-text" lang="${LANG[s].html}">${joinSegs(segs, srcMarkup, s)}</p></div>
+        <div class="pair-tgt"><div class="pair-label">${LANG[t].upper} · BẢN DỊCH</div>${allLoading
+          ? '<div class="skeleton" role="status" aria-label="Đang dịch"><span></span><span></span></div>'
+          : `<p class="tgt-text" lang="${LANG[t].html}">${joinSegs(segs, targetPart, t)}</p>`}
+          ${warns.length ? `<ul class="warns">${warns.join('')}</ul>` : ''}
+          ${retried ? '<p class="whole-note">Có câu được dịch lại để giữ đúng thuật ngữ — nên đọc lại nghĩa.</p>' : ''}
+          <p class="whole-note">Muốn sửa từng câu: chọn <b>Hai cột</b> hoặc <b>Nối tiếp</b>.</p></div>
       </article>`;
+  }
+  // Ghép các câu theo bố cục gốc (dùng cho hiển thị HTML).
+  function joinSegs(segs, part, lang) {
+    let out = '', prev = -1;
+    segs.forEach((seg, i) => {
+      const p = part(seg);
+      if (i === 0) out = p;
+      else if (seg.para !== prev) out += '\n\n' + p;
+      else if (seg.lineStart) out += '\n' + p;
+      else out += (lang === 'zh' ? '' : ' ') + p;
+      prev = seg.para;
     });
-    return `<div class="stack">${html}</div>`;
+    return out;
   }
 
   function columnsHTML(segs) {
@@ -692,7 +714,7 @@
     el.modeInline.setAttribute('aria-pressed', String(state.mode === 'inline'));
     const s = esc(LANG[state.dir].name), t = esc(LANG[other(state.dir)].name);
     el.modeHelp.innerHTML = state.mode === 'stack'
-      ? `Mỗi câu: <b>${s}</b> nguyên văn ở trên, <b>${t}</b> bản dịch ngay bên dưới.`
+      ? `Toàn bộ <b>${s}</b> nguyên văn ở trên, <b>${t}</b> bản dịch liền mạch ở dưới.`
       : state.mode === 'inline'
         ? `Giữ nguyên câu <b>${s}</b>, viết liền <b>${t}</b> ngay sau. Nút <b>Song ngữ</b> và <b>TXT</b> xuất đúng dạng nối tiếp này.`
         : 'Đối chiếu theo hàng: <b>Tiếng Việt</b> luôn ở cột trái (trên điện thoại: ở trên), <b>中文</b> luôn ở cột phải.';
@@ -819,6 +841,8 @@
   function bilingualText() {
     if (state.mode === 'inline') return inlineText();
     const s = state.dir, t = other(s);
+    // "Gốc + dịch ↓": cả đoạn nguyên văn, rồi cả đoạn bản dịch.
+    if (state.mode === 'stack') return joinByLayout(x => x.original, s) + '\n\n' + joinByLayout(targetOrMark, t);
     let out = '', prev = -1;
     state.segments.forEach((seg, i) => {
       if (i) out += seg.para !== prev ? '\n\n\n' : '\n\n';
